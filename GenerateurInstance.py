@@ -51,7 +51,7 @@ def enregistrer_donnees(G, fichier):
         json.dump(donnees, f, indent=4)
 
 # Exemple d'utilisation
-nombre_de_villes = 6
+nombre_de_villes = 15
 graphe = generer_instance_aleatoire(nombre_de_villes, proba_interdit=0.05)
 enregistrer_donnees(graphe, 'donnees_tournee.json')
 afficher_graphe(graphe)
