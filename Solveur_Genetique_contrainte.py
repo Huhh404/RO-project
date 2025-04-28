@@ -1,38 +1,10 @@
-import json
 import random
-
-def load_data(json_file):
-    with open(json_file, 'r') as f:
-        data = json.load(f)
-
-    nombre_villes = data["nombre_de_villes"]
-    matrice_cout = data["matrice_cout"]
-
-    # Remplace "Infinity" par float('inf')
-    for i in range(nombre_villes):
-        for j in range(nombre_villes):
-            if matrice_cout[i][j] == "Infinity" or matrice_cout[i][j] == "inf":
-                matrice_cout[i][j] = float('inf')
-
-    return nombre_villes, matrice_cout
-
-def cout_chemin_multi(chemins, matrice_cout):
-    total = 0
-    for chemin in chemins:
-        if len(chemin) == 0:
-            continue
-        cost = 0
-        current_city = 0  # départ
-        for ville in chemin:
-            cost += matrice_cout[current_city][ville]
-            current_city = ville
-        cost += matrice_cout[current_city][0]  # retour au départ
-        total += cost
-    return total
+import time
+from utils import cout_chemin_multi
 
 def creer_population(taille_population, nombre_villes, nombre_vehicules):
     population = []
-    villes = list(range(1, nombre_villes))  # Sauf ville 0
+    villes = list(range(1, nombre_villes))
     for _ in range(taille_population):
         random.shuffle(villes)
         chemins = [[] for _ in range(nombre_vehicules)]
@@ -63,12 +35,15 @@ def mutation(chemins, taux_mutation=0.02):
             chemin[i], chemin[j] = chemin[j], chemin[i]
     return chemins
 
-def algorithme_genetique_multi(matrice_cout, nombre_villes, nombre_vehicules, generations=500, taille_population=100):
+def run_genetique(matrice_cout, nombre_villes, nombre_vehicules, generations=2500, taille_population=100):
+    historique_couts = []
+    historique_temps = []
+
     population = creer_population(taille_population, nombre_villes, nombre_vehicules)
+    start = time.perf_counter()
 
     for generation in range(generations):
         population = selection(population, matrice_cout)
-        
         enfants = []
         while len(enfants) < taille_population:
             parent1 = random.choice(population)
@@ -76,20 +51,12 @@ def algorithme_genetique_multi(matrice_cout, nombre_villes, nombre_vehicules, ge
             enfant = croisement(parent1, parent2)
             enfant = mutation(enfant)
             enfants.append(enfant)
-        
         population = enfants
 
-    meilleur_chemin = min(population, key=lambda chemins: cout_chemin_multi(chemins, matrice_cout))
-    cout_final = cout_chemin_multi(meilleur_chemin, matrice_cout)
-    return meilleur_chemin, cout_final
+        meilleur_chemin = min(population, key=lambda chemins: cout_chemin_multi(chemins, matrice_cout))
+        cout_actuel = cout_chemin_multi(meilleur_chemin, matrice_cout)
 
-if __name__ == "__main__":
-    json_file = 'cas_reel.json'
-    nombre_villes, matrice_cout = load_data(json_file)
+        historique_couts.append(cout_actuel)
+        historique_temps.append(time.perf_counter() - start)
 
-    nombre_vehicules = int(input("Entrez le nombre de véhicules : "))
-    chemin, cout = algorithme_genetique_multi(matrice_cout, nombre_villes, nombre_vehicules, generations=1000, taille_population=200)
-
-    for i, parcours in enumerate(chemin):
-        print(f"Chemin véhicule {i+1} : [0] -> {parcours} -> [0]")
-    print("Coût total :", cout)
+    return historique_couts, historique_temps
